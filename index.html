@@ -67,6 +67,83 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-githubpage" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/01/26/githubpage/" class="article-date">
+  <time datetime="2015-01-26T09:30:01.000Z" itemprop="datePublished">Jan 26 2015</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/01/26/githubpage/">Github pages を使って静的サイト作成</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>こんにちはみなさん。<br>niisan-tokyoです。</p>
+<p>前回の記事で、HEXOを使って容易に静的サイトを作ることができることがわかりました。<br>今回の記事では、これを実際にWEB上で公開してみようと思います。<br>ターゲットとするホスティングサービスとしては、無料で使えるGithub pages にしようと思います。<br>まあ、このサイトがGitHubPages上にあるんで、それが理由だったりするんですが…</p>
+<h2 id="GitHubPages">GitHubPages</h2>
+<p><a href="https://pages.github.com/" target="_blank" rel="external">GitHubPages</a>というのは、gitを使ってWEBサイトを簡単に作ってしまえるサービスで、ユーザー独自のサイトを作ったり、プロジェクト用のサイトを作ることができます。<br>gitを使って、とあるように、サイトのデプロイをgitを通して行います。</p>
+<p>HEXOは、GitHubPagesへのデプロイを支援する機構が備わっており、作成した静的サイトをコマンド一発でWEB上に反映させることができるのです。やったね！<br>他にも多くの静的サイトジェネレータで、同じような機能を支援しているらしく、OctopressやJekyllみたいな有名どころでも、デプロイを簡易化してくれるみたいです。</p>
+<h2 id="サイトを作る">サイトを作る</h2>
+<h3 id="GitHubPages_用のリポジトリを作る">GitHubPages 用のリポジトリを作る</h3>
+<p>さて、早速サイトを作ってしまいましょう。<br>そのためにはまず、GitHubPages用のリポジトリを作る必要があります。<br>githubのアカウントがない場合は、作っておいてくださいな。</p>
+<p>アカウントを用意しましたら、早速リポジトリを作ります。<br>ところで、hexoは画像を用意するのが若干億劫なのと、タグとかカテゴリとかで飛ぶと、画像が出ないとかいう問題があるっぽいので、解説用の画像を用意しておりません！<br>なんでこんな言い訳しているかというと、リポジトリの作り方を手取り足取り画像解説を交えて解説できないということです…<br>まあ、開発者なら、こんなもの楽勝ですよ！</p>
+<p>さて、リポジトリを作るのですが、その名前を決める必要があります。<br>今回はプロジェクトではなく、個人用のサイトを作ることにしましょう。<br>この場合、リポジトリの名前は以下のようにしなければなりません</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;yourname&gt;.github.<span class="built_in">io</span></div></pre></td></tr></table></figure>
+
+<p><code>&lt;yourname&gt;</code>には、各々のアカウント名を入れてください。<br>私の場合は <code>niisan-tokyo.github.io</code>がリポジトリ名となります。<br>ちょうどこのサイトのドメイン名と同じ名前になっております。<br>とりあえず、リポジトリを作成したので、次の設定に移りましょう。</p>
+<h3 id="鍵を登録する">鍵を登録する</h3>
+<p>githubにリポジトリをプッシュするためには、鍵を用意しておく必要があります。<br>ここでいう鍵というのは、SSH接続に必要な暗号鍵です。</p>
+<h4 id="鍵を作る">鍵を作る</h4>
+<p>その鍵はどう用意するんだというと、普通にコマンドで作ることができます。(Windowsは無理よ。)<br>私の場合はVM上で作業しているので、鍵もVMのCentOS上で作ることにします。(VM上であればWindowsでもいけるぜ！)</p>
+<p>VM上で以下のようにコマンドを打ち込んで、鍵を作成します</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">cd</span> ~/.ssh/</div><div class="line">ssh-keygen</div></pre></td></tr></table></figure>
+
+<p>これで、鍵ができています。<br><code>~/.ssh/</code>配下で<code>ls</code>コマンドを打ち込むと、鍵ファイルとして、<code>id_rsa</code>, <code>id_rsa.pub</code>という二つのファイルができていると思います。<br>そこで、viとかcatとかでid_rsa.pubの中身を開き、その中身をコピーしましょう。</p>
+<h4 id="鍵を登録する-1">鍵を登録する</h4>
+<p>現在のバージョンですと、githubのマイページの右上に歯車マークがあるので、こいつをクリックします。<br>すると、個人設定ページに入るので、左のメニューバーからSSH keysとあるので、こいつを押してやります。<br>すると、鍵を設定する画面に入るので、先ほどコピーしたid_rsa.pubの中身を貼り付けてやります。<br>これで鍵の登録は完了です。</p>
+<h3 id="HEXOで静的ページをデプロイする">HEXOで静的ページをデプロイする</h3>
+<p>なんだかいろいろ面倒でしたが、ここからが本番です。<br>前回の記事でHEXOで静的サイトを作ることを見てきましたが、肝心のサイト生成とかデプロイとかなんにもやってなかったです。</p>
+<p>というわけで、HEXOで作った静的ページを、GitHubPagesにデプロイ(アップロード)してみましょう。<br>たいした内容がなくても大丈夫です。<br>やることに意味があるのですよ！</p>
+<h4 id="_config-ymlをいじる">_config.ymlをいじる</h4>
+<p>早速ですが、前回作成したHEXOのプロジェクトページに入ってみましょう。<br>ファイル群に<code>_config.yml</code>があると思います。<br>こいつが書き方のルールとかデプロイ先の情報とかを設定するものです。<br>プラグインの設定もここでやるので、よく見ておくと良いです。</p>
+<p>さて、今回はデプロイすることが目的ですので、最小限の設定をしてみましょう。<br><code>_config.yml</code>の最後尾に以下のような設定を突っ込みます</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="preprocessor"># Deployment</span></div><div class="line"><span class="preprocessor">## Docs: http://hexo.io/docs/deployment.html</span></div><div class="line"><span class="title">deploy</span>:</div><div class="line">  <span class="typedef"><span class="keyword">type</span>: github</span></div><div class="line">  repo: git@github.com:&lt;yourname&gt;/&lt;yourname&gt;.github.io.git</div><div class="line">  branch: master</div></pre></td></tr></table></figure>
+
+<p>ここで、<code>&lt;yourname&gt;</code>は例によってアカウント名を入れてください。<br>これでとりあえずの設定は終了です。</p>
+<h4 id="デプロイする">デプロイする</h4>
+<p>最後にデプロイしましょう。<br>せっかくなので、一発でデプロイするコマンドを売って胃しまいましょう。<br><code>_config.yml</code>のあるディレクトリ上で、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">hexo</span> deploy -g</div></pre></td></tr></table></figure>
+
+<p>これで終わりです。<br>deployは自動でgitリポジトリを作り、生成した静的htmlをコミットし、最後にgithubにpushすることで、デプロイを完遂します。<br><code>-g</code>オプションは、デプロイする際に、静的サイト生成を行うという意味になります。<br><code>-g</code>をつけない場合は<code>hexo generate</code>コマンドで、一旦静的ページ生成を完遂していなければなりません。</p>
+<p>兎にも角にも、これで静的サイト生成は終わりです。<br>早速<code>&lt;yourpage&gt;.github.io</code>にアクセスし、自分の成果を見てみましょう！</p>
+<p>さて、今回はこんなところです。<br>それではみなさん、よい開発を！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://niisan-tokyo.github.io/2015/01/26/githubpage/" data-id="2c03e18d7t4gts14" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/github-pages/">github pages</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/">hexo</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-2015012502" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2015/01/25/2015012502/" class="article-date">
@@ -282,7 +359,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/github-pages/">github pages</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -291,7 +368,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/vagrant/" style="font-size: 20.00px;">vagrant</a>
+      <a href="/tags/github-pages/" style="font-size: 15.00px;">github pages</a><a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/vagrant/" style="font-size: 15.00px;">vagrant</a>
     </div>
   </div>
 
@@ -300,7 +377,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">3</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">4</span></li></ul>
     </div>
   </div>
 
@@ -310,6 +387,10 @@
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2015/01/26/githubpage/">Github pages を使って静的サイト作成</a>
+          </li>
         
           <li>
             <a href="/2015/01/25/2015012502/">HEXOを使って静的サイト作成</a>

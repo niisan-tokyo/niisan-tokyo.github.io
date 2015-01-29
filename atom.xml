@@ -4,7 +4,7 @@
   <subtitle><![CDATA[徒然エンジニアリング]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://niisan-tokyo.github.io/"/>
-  <updated>2015-01-29T00:16:03.999Z</updated>
+  <updated>2015-01-29T11:36:38.701Z</updated>
   <id>http://niisan-tokyo.github.io/</id>
   
   <author>
@@ -19,8 +19,8 @@
     <link href="http://niisan-tokyo.github.io/2015/01/26/githubpage/"/>
     <id>http://niisan-tokyo.github.io/2015/01/26/githubpage/</id>
     <published>2015-01-26T09:30:01.000Z</published>
-    <updated>2015-01-26T15:51:11.000Z</updated>
-    <content type="html"><![CDATA[<p>こんにちはみなさん。<br>niisan-tokyoです。</p>
+    <updated>2015-01-29T11:54:16.000Z</updated>
+    <content type="html"><![CDATA[<p>こんにちはみなさん。<br>niisan-tokyoでございます。</p>
 <p>前回の記事で、HEXOを使って容易に静的サイトを作ることができることがわかりました。<br>今回の記事では、これを実際にWEB上で公開してみようと思います。<br>ターゲットとするホスティングサービスとしては、無料で使えるGithub pages にしようと思います。<br>まあ、このサイトがGitHubPages上にあるんで、それが理由だったりするんですが…</p>
 <h2 id="GitHubPages">GitHubPages</h2>
 <p><a href="https://pages.github.com/" target="_blank" rel="external">GitHubPages</a>というのは、gitを使ってWEBサイトを簡単に作ってしまえるサービスで、ユーザー独自のサイトを作ったり、プロジェクト用のサイトを作ることができます。<br>gitを使って、とあるように、サイトのデプロイをgitを通して行います。</p>
@@ -61,8 +61,8 @@
 <p>さて、今回はこんなところです。<br>それではみなさん、よい開発を！</p>
 ]]></content>
     <summary type="html">
-    <![CDATA[<p>こんにちはみなさん。<br>niisan-tokyoです。</p>
-<p>前回の記事で、HEXOを使って容易に静的サイトを作ることができることがわかりました。<br>今回の記事では、これを実際にWEB上で公開してみようと思います。<br>ターゲットとするホスティングサービス]]>
+    <![CDATA[<p>こんにちはみなさん。<br>niisan-tokyoでございます。</p>
+<p>前回の記事で、HEXOを使って容易に静的サイトを作ることができることがわかりました。<br>今回の記事では、これを実際にWEB上で公開してみようと思います。<br>ターゲットとするホスティング]]>
     </summary>
     
       <category term="hexo" scheme="http://niisan-tokyo.github.io/tags/hexo/"/>

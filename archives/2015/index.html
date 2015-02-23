@@ -67,6 +67,71 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-jenkins-apache" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/02/23/jenkins-apache/" class="article-date">
+  <time datetime="2015-02-23T14:17:57.000Z" itemprop="datePublished">Feb 23 2015</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/02/23/jenkins-apache/">ALMiniumでいれたJenkinsにハマった件</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>こんにちは皆さん<br>niisan-tokyoです。</p>
+<p>Jenkinsの謎挙動と戦っていたのですが、ようやく解決しましたので、せっかくだから公開してみようと思うのです<br>よくありそうなパターンなのに、どこにもないんだもん・・・</p>
+<p>備忘録代わりに長文になってしまっています。<br>面倒臭かったら、最後の方だけ見ちゃってください</p>
+<h2 id="ALMinium">ALMinium</h2>
+<p>まず前提として、私はALMiniumというプロジェクト管理ツールを利用させて頂いております<br>メジャーなチケット管理ツールのRedmineをお手軽にコマンド一発で導入できる便利なツールで、何度もお世話になっております</p>
+<p>何がいいって、これ、Jenkinsまで導入してくれるんですよ！<br>自宅でローカルな開発環境にALMiniumぶち込んで、Jenkins立ててお気軽CIなんて、ごきげんだと思いませんか？<br>PHPerの私は、phingあたりのビルドツールを入れて、タスクを作っておき、定期的にJenkinsさんにビルドしてもらってます</p>
+<h3 id="Jenkinsの構成">Jenkinsの構成</h3>
+<p>あとで重要となりますので、ALMinium下でのJenkinsの構成を見ておきます。<br>まずWebサーバはapacheを使用しています。<br>Location設定により、/jenkins というURLが来た場合、プロキシ、及びリバースプロキシにJenkinsを設定し、処理を移譲するようになっています。<br>つまり、ユーザーはJenkinsに直接アクセスするわけではなく、一旦apacheを経由してから、Jenkinsにアクセスするのです</p>
+<h2 id="問題との邂逅">問題との邂逅</h2>
+<p>さて、今のプロジェクトでも早速Jenkinsを突っ込んでみました。<br>ところが、プラグインの管理や、設定登録後のリダイレクトに何故か表示が失敗するケースが多発。<br>よく見てみると、URLがおかしくなっていました</p>
+<h3 id="https_から_http_にいつの間にか変化している">https から http にいつの間にか変化している</h3>
+<p>実は、自宅ではローカル環境でしかALMiniumに繋がないため、SSLを使用していなかったのです。<br>しかし、今回のプロジェクトではそうも行かないので、ALMinium導入時にSSLの設定を追加したのです。<br>すると、Jenkinsの特定のページにアクセスしようとすると、URLが何故かhttpsからhttpになってしまい、アクセスできなくなってしまうのです。</p>
+<h2 id="解決編">解決編</h2>
+<p>よく調べてみると、どうもURLの末尾に「/」の入っていないリンクを踏むと、URLが変わってしまうらしい。<br>また、開発ツールを使用すると、リンク押下後のタイムラインで、一度httpsのページにアクセスしたあと、httpのページにリダイレクトしていることが判明しました。</p>
+<h3 id="原因1：mod_dir">原因1：mod_dir</h3>
+<p>スラッシュのあるなしによるリダイレクトの挙動は、mod_dirが原因です。<br>詳細は省きますが、スラッシュが入っていないURLが来ると、その末尾の文字列がディレクトリを表していると判断した場合、末尾にスラッシュを付与したURLにリダイレクトするという仕様のようです。<br>そういうめんどくさい仕様のため、URLの末尾にスラッシュ「/」がないURLを踏むと、リダイレクトし、問題が発生してしまうということがわかりました。</p>
+<h3 id="原因2：プロキシ">原因2：プロキシ</h3>
+<p>ただリダイレクトするだけであれば問題はないのですが、どういうわけだかスキーマがhttpsからhttpに変わってしまっています<br>この原因は実は私自身も良くわかっていませんが、どうやらプロキシにあるようです。<br>先に述べたように、一旦apacheが受け取ったリクエストは、プロキシという形でJenkinsに処理が移譲されます<br>Jenkinsへの設定を規定す<code>conf.d/jenkins.conf</code>を覗いてみると、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ProxyPass         http:<span class="comment">//localhost:8081/jenkins</span></div><div class="line">ProxyPassReverse  http:<span class="comment">//localhost:8081/jenkins</span></div></pre></td></tr></table></figure>
+
+<p>となっています。<br>Jenkinsへアクセスするとき、そして戻ってくるときのURLがともにhttpスキーマであることが、そもそもの原因のようです。<br>つまり、Jenkinsに処理を移譲して何らかのデータが返却されると、どういうわけかJenkinsへつなぐ際のスキーマに変更されているようです。</p>
+<h3 id="解決法：リクエストヘッダーに、httpsであることを明記">解決法：リクエストヘッダーに、httpsであることを明記</h3>
+<p>というわけで、解決法としては変更されているスキーマをhttpからhttpsに戻してやれば良いということがわかります。<br>そのためには<code>conf.d/jenkins.conf</code>で</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">RequestHeader <span class="keyword">set</span> X-Forwarded-Proto <span class="string">"https"</span></div><div class="line">RequestHeader <span class="keyword">set</span> X-Forwarded-Port <span class="string">"443"</span></div></pre></td></tr></table></figure>
+
+<p>を突っ込んでやればよいです。</p>
+<p>と、今回はこんなかんじです。<br>皆様のご参考になれば幸いです。<br>それでは皆様、よい開発を！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://niisan-tokyo.github.io/2015/02/23/jenkins-apache/" data-id="z58myn0ti2e3z4ne" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/alminium/">alminium</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/apache/">apache</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/jenkins/">jenkins</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-githubpage" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2015/01/26/githubpage/" class="article-date">
@@ -305,7 +370,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/github-pages/">github pages</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/alminium/">alminium</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apache/">apache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/github-pages/">github pages</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jenkins/">jenkins</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -314,7 +379,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/github-pages/" style="font-size: 15.00px;">github pages</a><a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/vagrant/" style="font-size: 15.00px;">vagrant</a>
+      <a href="/tags/alminium/" style="font-size: 15.00px;">alminium</a><a href="/tags/apache/" style="font-size: 15.00px;">apache</a><a href="/tags/git/" style="font-size: 10.00px;">git</a><a href="/tags/github-pages/" style="font-size: 15.00px;">github pages</a><a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/jenkins/" style="font-size: 15.00px;">jenkins</a><a href="/tags/vagrant/" style="font-size: 15.00px;">vagrant</a>
     </div>
   </div>
 
@@ -323,7 +388,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">3</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -333,6 +398,10 @@
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2015/02/23/jenkins-apache/">ALMiniumでいれたJenkinsにハマった件</a>
+          </li>
         
           <li>
             <a href="/2015/01/26/githubpage/">Github pages を使って静的サイト作成</a>

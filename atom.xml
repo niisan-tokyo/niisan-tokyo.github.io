@@ -4,7 +4,7 @@
   <subtitle><![CDATA[徒然エンジニアリング]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://niisan-tokyo.github.io/"/>
-  <updated>2015-01-29T11:36:38.701Z</updated>
+  <updated>2015-02-23T15:13:57.704Z</updated>
   <id>http://niisan-tokyo.github.io/</id>
   
   <author>
@@ -13,6 +13,54 @@
   </author>
   
   <generator uri="http://zespia.tw/hexo/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[ALMiniumでいれたJenkinsにハマった件]]></title>
+    <link href="http://niisan-tokyo.github.io/2015/02/23/jenkins-apache/"/>
+    <id>http://niisan-tokyo.github.io/2015/02/23/jenkins-apache/</id>
+    <published>2015-02-23T14:17:57.000Z</published>
+    <updated>2015-02-23T15:11:06.000Z</updated>
+    <content type="html"><![CDATA[<p>こんにちは皆さん<br>niisan-tokyoです。</p>
+<p>Jenkinsの謎挙動と戦っていたのですが、ようやく解決しましたので、せっかくだから公開してみようと思うのです<br>よくありそうなパターンなのに、どこにもないんだもん・・・</p>
+<p>備忘録代わりに長文になってしまっています。<br>面倒臭かったら、最後の方だけ見ちゃってください</p>
+<h2 id="ALMinium">ALMinium</h2>
+<p>まず前提として、私はALMiniumというプロジェクト管理ツールを利用させて頂いております<br>メジャーなチケット管理ツールのRedmineをお手軽にコマンド一発で導入できる便利なツールで、何度もお世話になっております</p>
+<p>何がいいって、これ、Jenkinsまで導入してくれるんですよ！<br>自宅でローカルな開発環境にALMiniumぶち込んで、Jenkins立ててお気軽CIなんて、ごきげんだと思いませんか？<br>PHPerの私は、phingあたりのビルドツールを入れて、タスクを作っておき、定期的にJenkinsさんにビルドしてもらってます</p>
+<h3 id="Jenkinsの構成">Jenkinsの構成</h3>
+<p>あとで重要となりますので、ALMinium下でのJenkinsの構成を見ておきます。<br>まずWebサーバはapacheを使用しています。<br>Location設定により、/jenkins というURLが来た場合、プロキシ、及びリバースプロキシにJenkinsを設定し、処理を移譲するようになっています。<br>つまり、ユーザーはJenkinsに直接アクセスするわけではなく、一旦apacheを経由してから、Jenkinsにアクセスするのです</p>
+<h2 id="問題との邂逅">問題との邂逅</h2>
+<p>さて、今のプロジェクトでも早速Jenkinsを突っ込んでみました。<br>ところが、プラグインの管理や、設定登録後のリダイレクトに何故か表示が失敗するケースが多発。<br>よく見てみると、URLがおかしくなっていました</p>
+<h3 id="https_から_http_にいつの間にか変化している">https から http にいつの間にか変化している</h3>
+<p>実は、自宅ではローカル環境でしかALMiniumに繋がないため、SSLを使用していなかったのです。<br>しかし、今回のプロジェクトではそうも行かないので、ALMinium導入時にSSLの設定を追加したのです。<br>すると、Jenkinsの特定のページにアクセスしようとすると、URLが何故かhttpsからhttpになってしまい、アクセスできなくなってしまうのです。</p>
+<h2 id="解決編">解決編</h2>
+<p>よく調べてみると、どうもURLの末尾に「/」の入っていないリンクを踏むと、URLが変わってしまうらしい。<br>また、開発ツールを使用すると、リンク押下後のタイムラインで、一度httpsのページにアクセスしたあと、httpのページにリダイレクトしていることが判明しました。</p>
+<h3 id="原因1：mod_dir">原因1：mod_dir</h3>
+<p>スラッシュのあるなしによるリダイレクトの挙動は、mod_dirが原因です。<br>詳細は省きますが、スラッシュが入っていないURLが来ると、その末尾の文字列がディレクトリを表していると判断した場合、末尾にスラッシュを付与したURLにリダイレクトするという仕様のようです。<br>そういうめんどくさい仕様のため、URLの末尾にスラッシュ「/」がないURLを踏むと、リダイレクトし、問題が発生してしまうということがわかりました。</p>
+<h3 id="原因2：プロキシ">原因2：プロキシ</h3>
+<p>ただリダイレクトするだけであれば問題はないのですが、どういうわけだかスキーマがhttpsからhttpに変わってしまっています<br>この原因は実は私自身も良くわかっていませんが、どうやらプロキシにあるようです。<br>先に述べたように、一旦apacheが受け取ったリクエストは、プロキシという形でJenkinsに処理が移譲されます<br>Jenkinsへの設定を規定す<code>conf.d/jenkins.conf</code>を覗いてみると、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ProxyPass         http:<span class="comment">//localhost:8081/jenkins</span></div><div class="line">ProxyPassReverse  http:<span class="comment">//localhost:8081/jenkins</span></div></pre></td></tr></table></figure>
+
+<p>となっています。<br>Jenkinsへアクセスするとき、そして戻ってくるときのURLがともにhttpスキーマであることが、そもそもの原因のようです。<br>つまり、Jenkinsに処理を移譲して何らかのデータが返却されると、どういうわけかJenkinsへつなぐ際のスキーマに変更されているようです。</p>
+<h3 id="解決法：リクエストヘッダーに、httpsであることを明記">解決法：リクエストヘッダーに、httpsであることを明記</h3>
+<p>というわけで、解決法としては変更されているスキーマをhttpからhttpsに戻してやれば良いということがわかります。<br>そのためには<code>conf.d/jenkins.conf</code>で</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">RequestHeader <span class="keyword">set</span> X-Forwarded-Proto <span class="string">"https"</span></div><div class="line">RequestHeader <span class="keyword">set</span> X-Forwarded-Port <span class="string">"443"</span></div></pre></td></tr></table></figure>
+
+<p>を突っ込んでやればよいです。</p>
+<p>と、今回はこんなかんじです。<br>皆様のご参考になれば幸いです。<br>それでは皆様、よい開発を！</p>
+]]></content>
+    <summary type="html">
+    <![CDATA[<p>こんにちは皆さん<br>niisan-tokyoです。</p>
+<p>Jenkinsの謎挙動と戦っていたのですが、ようやく解決しましたので、せっかくだから公開してみようと思うのです<br>よくありそうなパターンなのに、どこにもないんだもん・・・</p>
+<p>備忘録代わりに]]>
+    </summary>
+    
+      <category term="jenkins" scheme="http://niisan-tokyo.github.io/tags/jenkins/"/>
+    
+      <category term="apache" scheme="http://niisan-tokyo.github.io/tags/apache/"/>
+    
+      <category term="alminium" scheme="http://niisan-tokyo.github.io/tags/alminium/"/>
+    
+  </entry>
   
   <entry>
     <title><![CDATA[Github pages を使って静的サイト作成]]></title>

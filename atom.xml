@@ -4,7 +4,7 @@
   <subtitle><![CDATA[徒然エンジニアリング]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://niisan-tokyo.github.io/"/>
-  <updated>2015-02-23T15:13:57.704Z</updated>
+  <updated>2015-09-03T14:09:10.970Z</updated>
   <id>http://niisan-tokyo.github.io/</id>
   
   <author>
@@ -13,6 +13,60 @@
   </author>
   
   <generator uri="http://zespia.tw/hexo/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[はやりのDockerに乗っかる]]></title>
+    <link href="http://niisan-tokyo.github.io/2015/09/03/atomic-host/"/>
+    <id>http://niisan-tokyo.github.io/2015/09/03/atomic-host/</id>
+    <published>2015-09-03T12:31:35.000Z</published>
+    <updated>2015-09-03T14:07:37.000Z</updated>
+    <content type="html"><![CDATA[<p>ハロー、ハロー！<br>niisan-tokyoですよ！<br>今日はおかしなテンションなので、勘弁して下さい！！</p>
+<p>みんな、分散環境、やってるかな？<br>分散環境って、並列処理とか思い浮かべるけど、AWSのごとく、機能毎にサーバ分けするってことだったんだな。。。<br>会社の人に聞いて初めて知ったぜ！</p>
+<p>まあ、それはいいとして、今や分散環境はデフォルトだ！<br>AWS触ったことありゃ、もう常識みたいなもんだ</p>
+<p>いや、しかしだ。。。それ、開発環境はどうなっているよ？</p>
+<p>もしかして、<em>All In One</em> になっちゃいないか？</p>
+<p>かくいう俺もそうなんだ！<br>いやぁ、だって、面倒じゃないか。。。<br>確かにVagrant 使えば、気軽にサーバ作れるけど、一個一個コンピュータが立ち上がるんだぜ？<br>しかも仮想マシンだから、オーバーヘッドも気になるしな。。。</p>
+<p>前置きが長くなったが、そういうわけで仮想マシンじゃない仮想環境を用意しようってことなんだ<br>そいつが今流行のDockerだ！</p>
+<h2 id="Docker">Docker</h2>
+<p>Docker ってのは、コンテナ技術って言われるけど何なんだって思うよな？<br>語弊を恐れず簡単に行ってしまうと、コンテナってのは、ホストマシンのOSのコアと、ライブラリの一部を借りて、アプリケーションとライブラリを動作させているものだ！<br>仮想マシンと違って、各々の環境が自前のコアを用意する必要がない分、立ち上げも早いし、サイズも省スペースだ！<br>ただ、OSのコアというかカーネルが、ホストのものに縛られてしまうんだ。<br>そして、Dockerは基本的にLinuxでしか動かないので、コンテナも当然Linux環境となる</p>
+<p>まあ、いいじゃないか！<br>ここを見ている人は、だいたいLinux触ってるんだろうし。。。</p>
+<p>そんなわけで、ここからはLinuxのコンテナ作る話に限定するぞ！</p>
+<h2 id="Boot2Docker">Boot2Docker</h2>
+<p>ところで、niisan-tokyoのメイン開発マシンはMacなんだ<br>あれ？じゃあ、Docker使えないじゃん！</p>
+<p>なんてことはなく、やりようは色いろあるんだ<br>代表的なのは<strong>boot2docker</strong>を使うことだな！<br><a href="http://boot2docker.io/" target="_blank" rel="external">boot2docker</a></p>
+<p>こいつはDockerをMacやWindowsで使えるようにしてくれる・・・というより、コマンドをエミュレートしてくれるって行ったほうが正確かもな<br>詳しい挙動はというと、一旦Virtural Boxでサイズの小さい仮想マシンを構築し、その仮想マシンに対して、dockerコマンドを投げる、という動きになる<br>お手軽にDockerを使いたいんならこれだな</p>
+<p>ただ、見えないだけで、仮想マシンが動作している上、ファイルの共有あたりがちょいとわかりにくくなってしまっている</p>
+<h2 id="Project_Atomic">Project Atomic</h2>
+<p>Dockerを使う方法はもうひとつある<br>要するにDockerを使うための仮想マシンを用意しちゃえばいいのだ<br>仮想マシン５個も６個も立てるくらいなら、仮想マシン一つでアプリ全部コンテナで動かしたほうが、効率がいいてものさ！</p>
+<p>boot2dockerと違って、こいつは明確に仮想マシンを構築するので、それなりに制御もしやすいだろう<br>もちろん、明示的に仮想環境を建てなければならないし、そこにSSHで指示を与えなきゃならないので、まあ、少し面倒かもな<br>とはいえ、本格的にDockerをやろうって時にはいいんじゃないかと思うぞ</p>
+<p>で、そんな軽量のOS群の中でもniisanが注目しているのが、Project Atomic だ！<br><a href="http://www.projectatomic.io/" target="_blank" rel="external">Project Atomic</a></p>
+<p>こいつはRed Hatが主導で進めるプロジェクトで、マシン自体は最小限のコア機能だけ用意し、アプリの機能を各コンテナに持たせるって思想で作られるLinux ディストリビューションのことなんだ<br>既にRed Hat, CentOS, FedoraのAtomic Hostが作成されている<br>CentOSのAtomic Hostに関してはVagrantイメージも用意されているので、使ってみるといいだろう</p>
+<h2 id="Dockerを使ってみる">Dockerを使ってみる</h2>
+<p>ってなわけで、とりあえずDockerを使ってみる<br>お試し感覚なんで、Boot2dockerを使ってみよう<br>事前にVirtual Boxを入れておこう<br>渡しの場合は既に入ってたので、問題は起こらなかったが。。。<br>とりあえず公式サイトからboot2dockerを入れておいて欲しい<br>んで、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">boot2docker <span class="keyword">init</span></div></pre></td></tr></table></figure>
+
+<p>こいつでまず初期化しよう<br>ついで、Dockerを起動しよう</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">boot2docker <span class="keyword">up</span></div></pre></td></tr></table></figure>
+
+<p>すると、なにか色々出てくるはずだ。<br>で、正常に動作させるにはこんなかんじでやる</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">eval</span> <span class="string">"<span class="variable">$(boot2docker shellinit)</span>"</span></div></pre></td></tr></table></figure>
+
+<p>意味は簡単で、必要な環境変数を設定しているってことなんだ<br>では、いつもの様にHello Worldで締めくくってみよう</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="title">docker</span> run hello-world</div></pre></td></tr></table></figure>
+
+<p>正常に動作すれば成功だ！</p>
+<p>こんなかんじで、Dockerを勉強していくといいね！</p>
+]]></content>
+    <summary type="html">
+    <![CDATA[<p>ハロー、ハロー！<br>niisan-tokyoですよ！<br>今日はおかしなテンションなので、勘弁して下さい！！</p>
+<p>みんな、分散環境、やってるかな？<br>分散環境って、並列処理とか思い浮かべるけど、AWSのごとく、機能毎にサーバ分けするってことだったんだな。]]>
+    </summary>
+    
+      <category term="docker" scheme="http://niisan-tokyo.github.io/tags/docker/"/>
+    
+      <category term="vagrant" scheme="http://niisan-tokyo.github.io/tags/vagrant/"/>
+    
+  </entry>
   
   <entry>
     <title><![CDATA[ALMiniumでいれたJenkinsにハマった件]]></title>

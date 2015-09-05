@@ -67,6 +67,75 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-atomic-host2" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/09/05/atomic-host2/" class="article-date">
+  <time datetime="2015-09-05T01:15:55.000Z" itemprop="datePublished">Sep 5 2015</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/09/05/atomic-host2/">Dockerで遊ぶ</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>ハロー、みんな！<br>niisan-tokyoだゾ！</p>
+<p>Dockerのネタ書いてたんだけど、ちょっと長くなっちゃってね。。。<br>まあ、前回の続きだと思ってくれよ！</p>
+<p>それで、まあ、何ができるのかをちょっと調べていたんだけど、これがなかなか多い上に、概念の理解に時間がかかってしまってね、、、<br>そんな感じに言い訳をしつつ、コンテナ作って遊んでみようってことを考えたんだ！<br>暇があったら読んでいってくれよな！</p>
+<h2 id="Atomic_Host">Atomic Host</h2>
+<p>さて、前回dockerをmac上で直接動かしてみたわけだけど、これって実は、裏で軽量のvirtural boxマシンが立ち上がって、その仮想マシン上でdockerを操作している、ってのは説明したと思うんだ<br>で、それって、なんだかわかりにくいんだよな<br>挙動に不満があるとかじゃないんだけど、やっぱり動作環境をなるべく手元においておきたいってのは、心理だと思うんだ</p>
+<p>そこで今回は、説明だけ簡単にした、Atomic Hostを使ってみようと思うんだ！</p>
+<p>で、導入なんだけど、超簡単なんだ！<br>公式にVagrantパッケージが用意されているから、それを使ってやれば良くて、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">vagrant init centos/atomic-host</div><div class="line">vagrant <span class="keyword">up</span> --provider virtualbox</div></pre></td></tr></table></figure>
+
+<p>これで終わりさ！<br>難しいなんて言わせないぜ！</p>
+<p>ま、まあ、プライベートIPとか設定するためにVagrantfile をいじるかもしれないが、そんなのは些細な事さ！<br>さあ、これでAtomic Host を導入できたわけだし、楽しきdocker lifeを始めようじゃないか！</p>
+<h3 id="。。。あれ？ディレクトリ共有は？">。。。あれ？ディレクトリ共有は？</h3>
+<p>え？仮想マシン上に<code>/vagrant</code> ディレクトリがないって？<br>Ah… これにはAtomic Hostの性質が関わってきているんだ。</p>
+<p>さて、通常vagrantを使用した際にホストの<code>Vagrantfile</code>のあるディレクトリとゲストの<code>/vagrant</code> ディレクトリが共有されると思うんだけど、あれって、Virtual Box のshared folder っていう機能を使っているんだ<br>で、この機能を使うには、ホストとゲストの双方にVirtural Boxがインストールされていないといけない</p>
+<p>結論から行ってしまうと、Atomic Host にVirtural Box はないし、入れられない！<br>そりゃそうだ、dockerにコアを提供することが本来の仕事なんだから、余計なもの入れていたずらにサイズを重くする必要もないからね！<br>じゃあ、どうするのかって？心配はいらない<br>こんなこともあろうかと、Vagrantにはディレクトリ共有の仕組みが複数存在しているんだ</p>
+<h3 id="vagrant_rsync">vagrant rsync</h3>
+<p>shared folderが使えない場合は、だいたいrsyncによる共有が行われる<br>共有と行っても、ホストからゲストへの一方通行だ<br>仮想環境で作られた成果は共有されないってこと<br>でも、これは当然といえば当然なんだよな。。。<br>この設定になっている場合、仮想マシン上でホームディレクトリ上に<code>sync</code>というディレクトリができているはずで、こいつがこの場合の共有ディレクトリだ<br>中を覗くと、確かに<code>Vagrantfile</code>が存在するのを確認できるだろう</p>
+<p>前置きが長くなってしまったが、これでようやくAtomic Hostを使えるというものだね<br>とにかく、ホストマシンで開発なりアップロードするファイルを生成し、ゲスト上のコンテナにデプロイし、挙動を観察する<br>これがdockerを使用したやりかただ！</p>
+<h2 id="Docker_で_ubuntu_を動かそう">Docker で ubuntu を動かそう</h2>
+<p>さて、dockerの出番だ<br>今回は共有ディレクトリを活用せず、適当にコンテナ作って遊んでみようと思うんだ</p>
+<p>とりあえず仮想マシンに入ったら、dockerでコンテナを動かしてみよう</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo docker <span class="command">run</span> -<span class="keyword">it</span> <span class="comment">--rm ubuntu</span></div></pre></td></tr></table></figure>
+
+<p>こんなんで、ubuntuの最新のバージョンの環境が立ち上がるんだ<br>実はコンテナの元になるイメージを持っていなくても、自動的に公式リポジトリを見に行き、イメージを取得する、なんて機能もある<br>だから、公式のイメージが有るのならば、<code>docker pull</code>する必要がないってことだ</p>
+<p>それでまあ、一応コマンドのオプションの意味だけど</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="title">i</span>  : interactive のことで、コンテナを直接操作する</div><div class="line">t  : ttyのことらしいけど、niisanにはよくわからん。。。端末を確保してssh接続での操作を出力できるようにするとか？</div><div class="line">rm : コンテナ終了時に、コンテナを削除する</div></pre></td></tr></table></figure>
+
+<p>で、このコマンドを走らせると、シェルが立ち上がるんだ<br>後は適当に使ってやるといいんじゃないかな？<br>ほら、apt-getとか・・・</p>
+<p>適当に遊んだら<code>exit</code>でシェルを終了しよう<br>すると、コンテナも終了する<br>オプションでコンテナを削除するようにしていないと、このコンテナは残り続けるわけだが。。。</p>
+<p>もう一回同じようにコンテナを起動してみよう<br>さっきコンテナで操作した内容がまるで反映されていないってことがわかるだろう<br>そう、こいつがdockerの最大の特徴の一つだ！<br>つまり、起動するたびに、内容がリセットされるってことだ！<br>もちろん、これは単純にdocker runをすると、新しいコンテナが生成され、古いコンテナの内容は残っていないってことなんだけど、<br>全く同じ内容の環境をお手軽に再現できるってのが、こいつの面白いところだな！</p>
+<p>今回はこんなかんじだ！<br>コンテナを作って色々遊んでみようと思ったけど、Atomic Host の話に終始してしまった感が否めないがな。。。<br>次こそはdockerを活用してみるぞ！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://niisan-tokyo.github.io/2015/09/05/atomic-host2/" data-id="4usfjj7h8ehrqjyz" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/atomic-host/">atomic host</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/変なテンション/">変なテンション</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-atomic-host" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2015/09/03/atomic-host/" class="article-date">
@@ -444,7 +513,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/alminium/">alminium</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apache/">apache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/github-pages/">github pages</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jenkins/">jenkins</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">2</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/alminium/">alminium</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/apache/">apache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/atomic-host/">atomic host</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/github-pages/">github pages</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jenkins/">jenkins</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vagrant/">vagrant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/変なテンション/">変なテンション</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -453,7 +522,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/alminium/" style="font-size: 15.00px;">alminium</a><a href="/tags/apache/" style="font-size: 15.00px;">apache</a><a href="/tags/docker/" style="font-size: 15.00px;">docker</a><a href="/tags/git/" style="font-size: 10.00px;">git</a><a href="/tags/github-pages/" style="font-size: 15.00px;">github pages</a><a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/jenkins/" style="font-size: 15.00px;">jenkins</a><a href="/tags/vagrant/" style="font-size: 20.00px;">vagrant</a>
+      <a href="/tags/alminium/" style="font-size: 15.00px;">alminium</a><a href="/tags/apache/" style="font-size: 15.00px;">apache</a><a href="/tags/atomic-host/" style="font-size: 15.00px;">atomic host</a><a href="/tags/docker/" style="font-size: 20.00px;">docker</a><a href="/tags/git/" style="font-size: 10.00px;">git</a><a href="/tags/github-pages/" style="font-size: 15.00px;">github pages</a><a href="/tags/hexo/" style="font-size: 20.00px;">hexo</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo vagrant</a><a href="/tags/hexo-vagrant/" style="font-size: 10.00px;">hexo, vagrant</a><a href="/tags/jenkins/" style="font-size: 15.00px;">jenkins</a><a href="/tags/vagrant/" style="font-size: 20.00px;">vagrant</a><a href="/tags/変なテンション/" style="font-size: 15.00px;">変なテンション</a>
     </div>
   </div>
 
@@ -462,7 +531,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">3</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/01/">January 2015</a><span class="archive-list-count">3</span></li></ul>
     </div>
   </div>
 
@@ -472,6 +541,10 @@
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2015/09/05/atomic-host2/">Dockerで遊ぶ</a>
+          </li>
         
           <li>
             <a href="/2015/09/03/atomic-host/">はやりのDockerに乗っかる</a>
@@ -487,10 +560,6 @@
         
           <li>
             <a href="/2015/01/25/2015012502/">HEXOを使って静的サイト作成</a>
-          </li>
-        
-          <li>
-            <a href="/2015/01/25/startBlog/">はじめに</a>
           </li>
         
       </ul>

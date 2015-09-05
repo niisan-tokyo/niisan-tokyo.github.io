@@ -4,7 +4,7 @@
   <subtitle><![CDATA[徒然エンジニアリング]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://niisan-tokyo.github.io/"/>
-  <updated>2015-09-03T14:09:10.970Z</updated>
+  <updated>2015-09-05T14:33:40.300Z</updated>
   <id>http://niisan-tokyo.github.io/</id>
   
   <author>
@@ -13,6 +13,58 @@
   </author>
   
   <generator uri="http://zespia.tw/hexo/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[Dockerで遊ぶ]]></title>
+    <link href="http://niisan-tokyo.github.io/2015/09/05/atomic-host2/"/>
+    <id>http://niisan-tokyo.github.io/2015/09/05/atomic-host2/</id>
+    <published>2015-09-05T01:15:55.000Z</published>
+    <updated>2015-09-05T14:28:32.000Z</updated>
+    <content type="html"><![CDATA[<p>ハロー、みんな！<br>niisan-tokyoだゾ！</p>
+<p>Dockerのネタ書いてたんだけど、ちょっと長くなっちゃってね。。。<br>まあ、前回の続きだと思ってくれよ！</p>
+<p>それで、まあ、何ができるのかをちょっと調べていたんだけど、これがなかなか多い上に、概念の理解に時間がかかってしまってね、、、<br>そんな感じに言い訳をしつつ、コンテナ作って遊んでみようってことを考えたんだ！<br>暇があったら読んでいってくれよな！</p>
+<h2 id="Atomic_Host">Atomic Host</h2>
+<p>さて、前回dockerをmac上で直接動かしてみたわけだけど、これって実は、裏で軽量のvirtural boxマシンが立ち上がって、その仮想マシン上でdockerを操作している、ってのは説明したと思うんだ<br>で、それって、なんだかわかりにくいんだよな<br>挙動に不満があるとかじゃないんだけど、やっぱり動作環境をなるべく手元においておきたいってのは、心理だと思うんだ</p>
+<p>そこで今回は、説明だけ簡単にした、Atomic Hostを使ってみようと思うんだ！</p>
+<p>で、導入なんだけど、超簡単なんだ！<br>公式にVagrantパッケージが用意されているから、それを使ってやれば良くて、</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">vagrant init centos/atomic-host</div><div class="line">vagrant <span class="keyword">up</span> --provider virtualbox</div></pre></td></tr></table></figure>
+
+<p>これで終わりさ！<br>難しいなんて言わせないぜ！</p>
+<p>ま、まあ、プライベートIPとか設定するためにVagrantfile をいじるかもしれないが、そんなのは些細な事さ！<br>さあ、これでAtomic Host を導入できたわけだし、楽しきdocker lifeを始めようじゃないか！</p>
+<h3 id="。。。あれ？ディレクトリ共有は？">。。。あれ？ディレクトリ共有は？</h3>
+<p>え？仮想マシン上に<code>/vagrant</code> ディレクトリがないって？<br>Ah… これにはAtomic Hostの性質が関わってきているんだ。</p>
+<p>さて、通常vagrantを使用した際にホストの<code>Vagrantfile</code>のあるディレクトリとゲストの<code>/vagrant</code> ディレクトリが共有されると思うんだけど、あれって、Virtual Box のshared folder っていう機能を使っているんだ<br>で、この機能を使うには、ホストとゲストの双方にVirtural Boxがインストールされていないといけない</p>
+<p>結論から行ってしまうと、Atomic Host にVirtural Box はないし、入れられない！<br>そりゃそうだ、dockerにコアを提供することが本来の仕事なんだから、余計なもの入れていたずらにサイズを重くする必要もないからね！<br>じゃあ、どうするのかって？心配はいらない<br>こんなこともあろうかと、Vagrantにはディレクトリ共有の仕組みが複数存在しているんだ</p>
+<h3 id="vagrant_rsync">vagrant rsync</h3>
+<p>shared folderが使えない場合は、だいたいrsyncによる共有が行われる<br>共有と行っても、ホストからゲストへの一方通行だ<br>仮想環境で作られた成果は共有されないってこと<br>でも、これは当然といえば当然なんだよな。。。<br>この設定になっている場合、仮想マシン上でホームディレクトリ上に<code>sync</code>というディレクトリができているはずで、こいつがこの場合の共有ディレクトリだ<br>中を覗くと、確かに<code>Vagrantfile</code>が存在するのを確認できるだろう</p>
+<p>前置きが長くなってしまったが、これでようやくAtomic Hostを使えるというものだね<br>とにかく、ホストマシンで開発なりアップロードするファイルを生成し、ゲスト上のコンテナにデプロイし、挙動を観察する<br>これがdockerを使用したやりかただ！</p>
+<h2 id="Docker_で_ubuntu_を動かそう">Docker で ubuntu を動かそう</h2>
+<p>さて、dockerの出番だ<br>今回は共有ディレクトリを活用せず、適当にコンテナ作って遊んでみようと思うんだ</p>
+<p>とりあえず仮想マシンに入ったら、dockerでコンテナを動かしてみよう</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo docker <span class="command">run</span> -<span class="keyword">it</span> <span class="comment">--rm ubuntu</span></div></pre></td></tr></table></figure>
+
+<p>こんなんで、ubuntuの最新のバージョンの環境が立ち上がるんだ<br>実はコンテナの元になるイメージを持っていなくても、自動的に公式リポジトリを見に行き、イメージを取得する、なんて機能もある<br>だから、公式のイメージが有るのならば、<code>docker pull</code>する必要がないってことだ</p>
+<p>それでまあ、一応コマンドのオプションの意味だけど</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="title">i</span>  : interactive のことで、コンテナを直接操作する</div><div class="line">t  : ttyのことらしいけど、niisanにはよくわからん。。。端末を確保してssh接続での操作を出力できるようにするとか？</div><div class="line">rm : コンテナ終了時に、コンテナを削除する</div></pre></td></tr></table></figure>
+
+<p>で、このコマンドを走らせると、シェルが立ち上がるんだ<br>後は適当に使ってやるといいんじゃないかな？<br>ほら、apt-getとか・・・</p>
+<p>適当に遊んだら<code>exit</code>でシェルを終了しよう<br>すると、コンテナも終了する<br>オプションでコンテナを削除するようにしていないと、このコンテナは残り続けるわけだが。。。</p>
+<p>もう一回同じようにコンテナを起動してみよう<br>さっきコンテナで操作した内容がまるで反映されていないってことがわかるだろう<br>そう、こいつがdockerの最大の特徴の一つだ！<br>つまり、起動するたびに、内容がリセットされるってことだ！<br>もちろん、これは単純にdocker runをすると、新しいコンテナが生成され、古いコンテナの内容は残っていないってことなんだけど、<br>全く同じ内容の環境をお手軽に再現できるってのが、こいつの面白いところだな！</p>
+<p>今回はこんなかんじだ！<br>コンテナを作って色々遊んでみようと思ったけど、Atomic Host の話に終始してしまった感が否めないがな。。。<br>次こそはdockerを活用してみるぞ！</p>
+]]></content>
+    <summary type="html">
+    <![CDATA[<p>ハロー、みんな！<br>niisan-tokyoだゾ！</p>
+<p>Dockerのネタ書いてたんだけど、ちょっと長くなっちゃってね。。。<br>まあ、前回の続きだと思ってくれよ！</p>
+<p>それで、まあ、何ができるのかをちょっと調べていたんだけど、これがなかなか多い上]]>
+    </summary>
+    
+      <category term="docker" scheme="http://niisan-tokyo.github.io/tags/docker/"/>
+    
+      <category term="atomic host" scheme="http://niisan-tokyo.github.io/tags/atomic-host/"/>
+    
+      <category term="変なテンション" scheme="http://niisan-tokyo.github.io/tags/%E5%A4%89%E3%81%AA%E3%83%86%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%B3/"/>
+    
+  </entry>
   
   <entry>
     <title><![CDATA[はやりのDockerに乗っかる]]></title>
